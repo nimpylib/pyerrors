@@ -64,11 +64,11 @@ proc init*[E: PyOSError](self: ref E, args: OSErrorArgs) =
   when defined(windows):
     self.winerror = args.winerror
 
-proc OSError_new*[E: PyOSError](myerrno: cint, strerr: string,
+proc OSError_new*[E: PyOSError](errno: cint, strerr: string,
     filename: string|int = "", winerror: cint = 0, filename2 = "", fillMsg: static[bool] = true): ref PyOSError =
   ## may returns a subclass of OSError
   type Third = typeof(filename)
-  var args: OSErrorArgs[Third] = (myerrno, strerr, filename, winerror, filename2)
+  var args: OSErrorArgs[Third] = (errno, strerr, filename, winerror, filename2)
   var newtype = proc (): ref PyOSError = new E
   let use_init = oserror_use_init[E](result)
   if not use_init:

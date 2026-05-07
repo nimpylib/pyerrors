@@ -121,25 +121,29 @@ elif not weirdTarget:
 
   func errnoMsg*(errno: cint): string = $c_strerror(errno)
 
-proc newErrnoErrT[E: PyOSError](errno=getErrno(), strerr: string): owned(ref PyOSError) =
-  OSError_new[E](errno, strerr)
-proc newErrnoErrT[E: PyOSError](errno=getErrno()): owned(ref PyOSError) =
-  newErrnoErrT[E](errno, errnoMsg(errno))
+template gen(errno, getErrno,){.dirty.} =
+  proc `new errno ErrT`[E: PyOSError](errno=getErrno(), strerr: string): owned(ref PyOSError) =
+    OSError_new[E](errno=errno, strerr=strerr)
+  proc `new errno ErrT`[E: PyOSError](errno=getErrno()): owned(ref PyOSError) =
+    `new errno ErrT`[E](errno, errnoMsg(errno))
 
-proc newErrnoErr(errno=getErrno()): owned(ref PyOSError) =
-  newErrnoErrT[oserrors_types.PyOSError](errno)
+  proc `new errno Err`(errno=getErrno()): owned(ref PyOSError) =
+    `new errno ErrT`[oserrors_types.PyOSError](errno)
 
-proc raiseErrno*(errno=getErrno()) =
-  ## may raise subclass of OSError
-  raise newErrnoErr(errno)
+  proc `raise errno`*(errno=getErrno()) =
+    ## may raise subclass of OSError
+    raise `new errno Err`(errno)
 
-proc raiseErrnoT*[T: PyOSError](errno=getErrno()) =
-  raise newErrnoErrT[T](errno)
+  proc `raise errno T`*[T: PyOSError](errno=getErrno()) =
+    raise `new errno ErrT`[T](errno)
 
-proc raiseErrnoWithPath*[T](p: PathLike[T]; errno = getErrno()) =
-  ## raises OSError or its SubError.
-  ## refer to errno even under Windows.
-  raise OSError_new[oserrors_types.PyOSError](errno, errnoMsg(errno), p.fspath)
+  proc `raise errno WithPath`*[T](p: PathLike[T]; errno = getErrno()) =
+    ## raises OSError or its SubError.
+    raise OSError_new[oserrors_types.PyOSError](errno=errno, strerr=errnoMsg(errno), filename=p.fspath)
+
+gen errno, getErrno
+proc getLastError(): cint{.inline.} = cint osLastError()
+gen winerror, getLastError
 
 when InJs:
   proc raiseErrnoWithMsg*(errno: cint, errMsg: string) =
