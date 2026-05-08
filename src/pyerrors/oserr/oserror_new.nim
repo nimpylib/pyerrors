@@ -64,8 +64,8 @@ proc init*[E: PyOSError](self: ref E, args: OSErrorArgs) =
   when defined(windows):
     self.winerror = args.winerror
 
-proc OSError_new*[E: PyOSError](errno: cint, strerr: string,
-    filename: string|int = "", winerror: cint = 0, filename2 = "", fillMsg: static[bool] = true): ref PyOSError =
+proc OSError_new*[E: PyOSError](errno: cint, winerror: cint, strerr: string,
+    filename: string|int = "", filename2 = "", fillMsg: static[bool] = true): ref PyOSError =
   ## may returns a subclass of OSError
   type Third = typeof(filename)
   var args: OSErrorArgs[Third] = (errno, strerr, filename, winerror, filename2)
@@ -85,4 +85,12 @@ proc OSError_new*[E: PyOSError](errno: cint, strerr: string,
 
   when fillMsg:
     result.msg = $result
+
+proc OSError_new*[E: PyOSError](errno: cint, strerr: string,
+    filename: string|int = "", filename2 = "", fillMsg: static[bool] = true): ref PyOSError =
+  OSError_new[E](errno, 0, strerr, filename, filename2, fillMsg)
+
+proc OSError_new*[E: PyOSError](winerror: cint, strerr: string,
+    filename: string|int = "", filename2 = "", fillMsg: static[bool] = true): ref PyOSError =
+  OSError_new[E](0, winerror, strerr, filename, filename2, fillMsg)
 

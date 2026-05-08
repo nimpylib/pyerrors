@@ -71,9 +71,9 @@ template noWeirdTarget*(def) =
 proc raiseExcWithPath*(p: PathLike, errCode: OSErrorCode){.sideEffect.} =
   ## raises OSError or its one of SubError type
   raise when defined(windows):
-    OSError_new[oserrors_types.PyOSError](0, p.fspath, winerror=errCode.cint)
+    OSError_new[oserrors_types.PyOSError](winerror=errCode.cint, p.fspath)
   else:
-    OSError_new[oserrors_types.PyOSError](errCode.cint, p.fspath)
+    OSError_new[oserrors_types.PyOSError](errno=errCode.cint, p.fspath)
 
 proc raiseExcWithPath*(p: PathLike){.sideEffect.} =
   let oserr = osLastError()
@@ -147,7 +147,7 @@ gen winerror, getLastError
 
 when InJs:
   proc raiseErrnoWithMsg*(errno: cint, errMsg: string) =
-    raise OSError_new[oserrors_types.PyOSError](errno, errMsg, fillMsg=false)
+    raise OSError_new[oserrors_types.PyOSError](errno=errno, errMsg, fillMsg=false)
 
   template catchJsErrAndDo(doSth; doErr) =
       var errMsg = ""
