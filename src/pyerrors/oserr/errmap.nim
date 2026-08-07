@@ -24,7 +24,11 @@ else:
     const name = val
   template decl_c_intImpl(variable, name, includeFile; defval) =
     const variable = from_c_int(name, includeFile, defval)
-  {.pragma: ErrnoMapAttr, compileTime.}
+  when defined(wasm):
+    # NIM-BUG: WASM backend won't remain the symbol of compileTime till runtime
+    {.pragma: ErrnoMapAttr.}
+  else:
+    {.pragma: ErrnoMapAttr, compileTime.}
   template ifHasErr(name: int; body) =
     when name != DEF_INT: body
 
