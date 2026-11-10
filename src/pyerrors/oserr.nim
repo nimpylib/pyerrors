@@ -10,14 +10,15 @@ when NimMajor > 1:
   import std/oserrors
 else:
   import std/os
+import pkg/jscompat/oserrors
+const InJs = defined(js)
+when InJs:
+  import pkg/jscompat/utils/oserr
+
 when defined(windows):
   import std/winlean
 else:
   import std/posix
-
-const InJs = defined(js)
-when InJs:
-  import pkg/jscompat/utils/oserr
 
 import pkg/pyio_abc
 import pkg/handy_sugars/backendMark
@@ -76,7 +77,7 @@ proc raiseExcWithPath*(p: PathLike, errCode: OSErrorCode){.sideEffect.} =
     OSError_new[oserrors_types.PyOSError](errno=errCode.cint, p.fspath)
 
 proc raiseExcWithPath*(p: PathLike){.sideEffect.} =
-  let oserr = osLastError()
+  let oserr = osLastErrorCompat()
   p.raiseExcWithPath(oserr)
 
 func pathsAsOne[T](a, b: PathLike[T], sep = " -> "): string =
@@ -114,12 +115,7 @@ template tryOsOp*(p1, p2: PathLike, body) =
   bind pathsAsOne
   pathsAsOne(p1, p2).tryOsOp body
 
-when InJs:
-  proc errnoMsg*(errno: cint): string = jsErrnoMsg(errno.OSErrorCode)
-elif not weirdTarget:
-  proc c_strerror(code: cint): cstring{.importc: "strerror", header: "<string.h>".}
-
-  func errnoMsg*(errno: cint): string = $c_strerror(errno)
+proc errnoMsg*(errno: cint): string = osErrorMsgCompat(errno.OSErrorCode)
 
 template gen(errno, getErrno,){.dirty.} =
   proc `new errno ErrT`[E: PyOSError](errno=getErrno(), strerr: string): owned(ref PyOSError) =
