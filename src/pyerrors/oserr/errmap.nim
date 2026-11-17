@@ -5,6 +5,7 @@ export tables
 import pkg/errno/errnoConsts
 import pkg/errno/private/varIfJs
 import ./types
+export errnoConsts
 
 when defined(js):
   {.pragma: ErrnoMapAttr.}
